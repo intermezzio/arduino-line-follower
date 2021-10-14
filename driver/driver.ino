@@ -8,13 +8,13 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 // Select which 'port' M1, M2, M3 or M4. In this case, M1
 Adafruit_DCMotor *leftMotor = AFMS.getMotor(3);
 // You can also make another motor on port M2
-Adafruit_DCMotor *rightMotor = AFMS.getMotor(2);
+Adafruit_DCMotor *rightMotor = AFMS.getMotor(4);
 
 // define pins
 int leftIRPin = A0;
 int rightIRPin = A1;
 
-int speed_ = 10;
+int speed_ = 16;
 
 char prevIRReading = 'l';
 
@@ -33,9 +33,6 @@ void setup() {
   
   leftMotor->run(FORWARD);
   rightMotor->run(FORWARD);
-
-  leftMotor->run(RELEASE);
-  rightMotor->run(RELEASE);
 }
 
 bool onTarget(int irReading) {
@@ -66,55 +63,65 @@ char processIRData(int leftIR, int rightIR) {
 }
 
 void driveMotors(char pos) {
+  Serial.println("Driving motors");
   int leftMotorSpeed = 0;
   int rightMotorSpeed = 0;
   switch(pos) {
     case 'L':
-      leftMotorSpeed = 10;
+      leftMotorSpeed = 8;
       rightMotorSpeed = 2;
       break;
     case 'l':
-      leftMotorSpeed = 7;
-      rightMotorSpeed = 5;
+      leftMotorSpeed = 6;
+      rightMotorSpeed = 4;
       break;
     case 'O':
     case 'g':
-      leftMotorSpeed = 6;
-      rightMotorSpeed = 6;
+      leftMotorSpeed = 5;
+      rightMotorSpeed = 5;
       break;
     case 'r':
-      leftMotorSpeed = 5;
-      rightMotorSpeed = 7;
+      leftMotorSpeed = 4;
+      rightMotorSpeed = 6;
       break;
     case 'R':
       leftMotorSpeed = 2;
-      rightMotorSpeed = 10;
+      rightMotorSpeed = 8;
       break;
     default:
       break;
   }
   leftMotorSpeed *= speed_;
   rightMotorSpeed *= speed_;
+
+  Serial.print("left speed: ");
+  Serial.println(leftMotorSpeed);
   
-  leftMotor->setSpeed(leftSpeed);
-  rightMotor->setSpeed(rightSpeed);
+  leftMotor->setSpeed(leftMotorSpeed);
+  rightMotor->setSpeed(rightMotorSpeed);
   
   return;
 }
 
-//void speedAngleCommands(int speed_, int angle) {
-//  /* speed is a velocity and angle is a bearing from north */
-//  
-//  // convert speed and angle into two vectors
-//  
-//  
-//  // assign motor speeds
-//  uint8_t leftSpeed;
-//  uint8_t rightSpeed;
-//
-//  leftMotor->setSpeed(leftSpeed);
-//  rightMotor->setSpeed(rightSpeed);
-//}
+void getInput() {
+  if(Serial.available() == 0) {
+    return;
+  }
+  int newSpeed = Serial.parseInt();
+  if(newSpeed < 0 || newSpeed > 32) {
+    // invalid data
+    Serial.print("Invalid speed ");
+    Serial.println(newSpeed);
+    return;
+  }
+  if(newSpeed == 0) {
+    Serial.println("Terminating code");
+    // end code by trapping in a while loop
+    while(true) {}
+  }
+  speed_ = newSpeed;
+  return;
+}
 
 void loop() {
   // read IR data
@@ -131,7 +138,10 @@ void loop() {
   // void
   
   // output speed and direction
-  // driveMotors(pos);
+  driveMotors(pos);
+
+  // read Serial input for speed change
+  getInput();
   
   // wait
   delay(100);
