@@ -6,17 +6,17 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 // Adafruit_MotorShield AFMS = Adafruit_MotorShield(0x61);
 
 // Select which 'port' M1, M2, M3 or M4. In this case, M1
-Adafruit_DCMotor *leftMotor = AFMS.getMotor(3);
+Adafruit_DCMotor *leftMotor = AFMS.getMotor(2);
 // You can also make another motor on port M2
-Adafruit_DCMotor *rightMotor = AFMS.getMotor(4);
+Adafruit_DCMotor *rightMotor = AFMS.getMotor(3);
 
 // define pins
 int leftIRPin = A0;
 int rightIRPin = A1;
 
-int speed_ = 16;
+int speed_ = 4;
 
-char prevIRReading = 'l';
+char prevIRReading = 'g';
 
 void setup() {
   pinMode(leftIRPin, INPUT);
@@ -37,7 +37,7 @@ void setup() {
 
 bool onTarget(int irReading) {
   Serial.println(irReading);
-  return irReading > 725;
+  return irReading > 550;
 }
 
 char processIRData(int leftIR, int rightIR) {
@@ -63,30 +63,30 @@ char processIRData(int leftIR, int rightIR) {
 }
 
 void driveMotors(char pos) {
-  Serial.println("Driving motors");
+//  Serial.println("Driving motors");
   int leftMotorSpeed = 0;
   int rightMotorSpeed = 0;
   switch(pos) {
+    case 'O':
     case 'L':
-      leftMotorSpeed = 8;
-      rightMotorSpeed = 2;
+      leftMotorSpeed = 4;
+      rightMotorSpeed = 0;
       break;
     case 'l':
-      leftMotorSpeed = 6;
-      rightMotorSpeed = 4;
+      leftMotorSpeed = 4;
+      rightMotorSpeed = 0;
       break;
-    case 'O':
     case 'g':
-      leftMotorSpeed = 5;
-      rightMotorSpeed = 5;
+      leftMotorSpeed = 7;
+      rightMotorSpeed = 7;
       break;
     case 'r':
-      leftMotorSpeed = 4;
-      rightMotorSpeed = 6;
+      leftMotorSpeed = 0;
+      rightMotorSpeed = 4;
       break;
     case 'R':
-      leftMotorSpeed = 2;
-      rightMotorSpeed = 8;
+      leftMotorSpeed = 0;
+      rightMotorSpeed = 4;
       break;
     default:
       break;
@@ -96,6 +96,8 @@ void driveMotors(char pos) {
 
   Serial.print("left speed: ");
   Serial.println(leftMotorSpeed);
+  Serial.print("right speed: ");
+  Serial.println(rightMotorSpeed);
   
   leftMotor->setSpeed(leftMotorSpeed);
   rightMotor->setSpeed(rightMotorSpeed);
@@ -117,6 +119,8 @@ void getInput() {
   if(newSpeed == 0) {
     Serial.println("Terminating code");
     // end code by trapping in a while loop
+    leftMotor->run(RELEASE);
+    rightMotor->run(RELEASE);
     while(true) {}
   }
   speed_ = newSpeed;
@@ -125,6 +129,7 @@ void getInput() {
 
 void loop() {
   // read IR data
+  Serial.println("Getting IR readings:");
   int leftIR = analogRead(leftIRPin);
   int rightIR = analogRead(rightIRPin);
   
@@ -144,5 +149,5 @@ void loop() {
   getInput();
   
   // wait
-  delay(100);
+  delay(10);
 }
