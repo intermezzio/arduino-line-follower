@@ -11,12 +11,13 @@ Adafruit_DCMotor *leftMotor = AFMS.getMotor(2);
 Adafruit_DCMotor *rightMotor = AFMS.getMotor(3);
 
 // define pins
-int leftIRPin = A0;
-int rightIRPin = A1;
+const int leftIRPin = A0;
+const int rightIRPin = A1;
 
-int speed_ = 4;
+int speed_ = 6;
 
-char prevIRReading = 'g';
+const int LEFT_THRESHOLD = 725;
+const int RIGHT_THRESHOLD = 400;
 
 void setup() {
   pinMode(leftIRPin, INPUT);
@@ -35,57 +36,49 @@ void setup() {
   rightMotor->run(FORWARD);
 }
 
-bool onTarget(int irReading) {
-  Serial.println(irReading);
-  return irReading > 550;
+bool onTarget(int irReading, int THRESHOLD) {
+  Serial.print(irReading);
+  Serial.print(",");
+  return irReading > THRESHOLD;
 }
 
 char processIRData(int leftIR, int rightIR) {
-  bool leftDetect = onTarget(leftIR);
-  bool rightDetect = onTarget(rightIR);
+  bool leftDetect = onTarget(leftIR, LEFT_THRESHOLD);
+  bool rightDetect = onTarget(rightIR, RIGHT_THRESHOLD);
   if(!leftDetect && !rightDetect) {
-    if(prevIRReading == 'l' || prevIRReading == 'L') {
-      return 'L';
-    } else if(prevIRReading == 'r' || prevIRReading == 'R') {
-      return 'R';
-    }
-    return 'O';
+    return 'g';
   } else if(rightDetect && !leftDetect) {
     // correct by moving right
-    return 'r';
+    return 'l';
   } else if(leftDetect && !rightDetect) {
     // correct by moving left
-    return 'l';
+    return 'r';
   } else {
-    // good
-    return 'g';
+    // should not reach this state
+    // both see the tape
+    return 'x';
   }
 }
 
 void driveMotors(char pos) {
 //  Serial.println("Driving motors");
+  int leftMotorDirection = FORWARD;
+  int rightMotorDirection = FORWARD;
+  
   int leftMotorSpeed = 0;
   int rightMotorSpeed = 0;
   switch(pos) {
-    case 'O':
-    case 'L':
-      leftMotorSpeed = 4;
-      rightMotorSpeed = 0;
-      break;
     case 'l':
       leftMotorSpeed = 4;
-      rightMotorSpeed = 0;
+      rightMotorSpeed = -4;
       break;
+    case 'x':
     case 'g':
-      leftMotorSpeed = 7;
-      rightMotorSpeed = 7;
-      break;
-    case 'r':
-      leftMotorSpeed = 0;
+      leftMotorSpeed = 4;
       rightMotorSpeed = 4;
       break;
-    case 'R':
-      leftMotorSpeed = 0;
+    case 'r':
+      leftMotorSpeed = -4;
       rightMotorSpeed = 4;
       break;
     default:
@@ -94,10 +87,23 @@ void driveMotors(char pos) {
   leftMotorSpeed *= speed_;
   rightMotorSpeed *= speed_;
 
-  Serial.print("left speed: ");
-  Serial.println(leftMotorSpeed);
-  Serial.print("right speed: ");
+//  Serial.print("left speed: ");
+  Serial.print(leftMotorSpeed);
+  Serial.print(",");
+//  Serial.print("right speed: ");
   Serial.println(rightMotorSpeed);
+
+  if(leftMotorSpeed < 0) {
+    leftMotorSpeed = -leftMotorSpeed;
+    leftMotorDirection = BACKWARD;
+  }
+  if(rightMotorSpeed < 0) {
+    rightMotorSpeed = -rightMotorSpeed;
+    rightMotorDirection = BACKWARD;
+  }
+
+  leftMotor->run(leftMotorDirection);
+  rightMotor->run(rightMotorDirection);
   
   leftMotor->setSpeed(leftMotorSpeed);
   rightMotor->setSpeed(rightMotorSpeed);
@@ -129,14 +135,14 @@ void getInput() {
 
 void loop() {
   // read IR data
-  Serial.println("Getting IR readings:");
   int leftIR = analogRead(leftIRPin);
   int rightIR = analogRead(rightIRPin);
   
   // determine situation from IR data
   // eg left, right, center
   char pos = processIRData(leftIR, rightIR);
-  Serial.println(pos);
+  Serial.print(pos);
+  Serial.print(",");
   
   // PID control, convert situation
   // to speed/direction
