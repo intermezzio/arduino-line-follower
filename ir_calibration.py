@@ -8,7 +8,7 @@ sns.set_style("darkgrid")
 tape_readings = pd.read_csv("ir_calibration_tape.csv")
 floor_readings = pd.read_csv("ir_calibration_floor.csv")
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(15,3))
 
 ax.plot(tape_readings["reading"], tape_readings["reading"]*0,
 	"ko", alpha=0.4, label="tape")
